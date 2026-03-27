@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>David Distri | Enterprise Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .sidebar-active { background: #3b82f6; color: white; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .card-premium { background: white; border-radius: 2rem; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1); }
+        .btn-primary { background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border-radius: 1rem; font-weight: 600; transition: all 0.2s; }
+        .btn-primary:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); }
+        .btn-success { background: #10b981; color: white; padding: 0.75rem 1.5rem; border-radius: 1rem; font-weight: 600; transition: all 0.2s; }
+        .btn-success:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); }
+        .btn-danger { background: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 0.75rem; font-weight: 600; transition: all 0.2s; }
+        .btn-danger:hover { background: #dc2626; }
+        input, select { border: 2px solid #e2e8f0; border-radius: 1rem; padding: 0.75rem 1rem; outline: none; transition: all 0.2s; }
+        input:focus, select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f1f5f9; padding: 1rem; text-align: left; font-weight: 700; color: #475569; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 1rem; border-bottom: 1px solid #f1f5f9; }
+        tr:hover { background: #f8fafc; }
+        .stats-card { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-radius: 2rem; padding: 2rem; color: white; box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3); }
+        .stats-card.green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3); }
+        .stats-card.orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.3); }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 700; }
+        .badge-low { background: #fee2e2; color: #991b1b; }
+        .badge-ok { background: #d1fae5; color: #065f46; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-72 bg-[#0b1437] text-white flex flex-col p-6">
+        <div class="mb-10 px-4">
+            <h1 class="text-2xl font-black tracking-tighter italic text-blue-400">DAVID_DISTRI</h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Premium ERP System</p>
+        </div>
+        <nav class="flex-1 space-y-2" id="main-nav">
+            <button onclick="App.navigate('dashboard')" class="w-full text-left px-6 py-4 rounded-[1.5rem] font-semibold transition-all hover:bg-slate-800" data-page="dashboard">
+                📊 Dashboard
+            </button>
+            <button onclick="App.navigate('pdv')" class="w-full text-left px-6 py-4 rounded-[1.5rem] font-semibold transition-all hover:bg-slate-800" data-page="pdv">
+                🛒 PDV
+            </button>
+            <button onclick="App.navigate('estoque')" class="w-full text-left px-6 py-4 rounded-[1.5rem] font-semibold transition-all hover:bg-slate-800" data-page="estoque">
+                📦 Estoque
+            </button>
+            <button onclick="App.navigate('financeiro')" class="w-full text-left px-6 py-4 rounded-[1.5rem] font-semibold transition-all hover:bg-slate-800" data-page="financeiro">
+                💰 Financeiro
+            </button>
+        </nav>
+        <div class="mt-auto pt-6 border-t border-slate-700">
+            <p class="text-xs text-slate-400">© 2026 David Distri</p>
+            <p class="text-xs text-slate-500">v1.0.0 Premium</p>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <header class="h-24 flex items-center justify-between px-10 shrink-0">
+            <h2 id="page-title" class="text-2xl font-black text-slate-800">Dashboard</h2>
+            <div id="clock" class="bg-white border p-3 rounded-2xl font-bold shadow-sm">00:00:00</div>
+        </header>
+
+        <div id="app-viewport" class="flex-1 overflow-y-auto px-10 pb-10">
+            
+            <!-- DASHBOARD -->
+            <div id="page-dashboard" class="tab-content active">
+                <div class="grid grid-cols-3 gap-6 mb-8">
+                    <div class="stats-card">
+                        <div class="text-sm font-semibold opacity-90 mb-2">Faturamento Total</div>
+                        <div id="stat-faturamento" class="text-4xl font-black">R$ 0,00</div>
+                    </div>
+                    <div class="stats-card green">
+                        <div class="text-sm font-semibold opacity-90 mb-2">Lucro Líquido</div>
+                        <div id="stat-lucro" class="text-4xl font-black">R$ 0,00</div>
+                    </div>
+                    <div class="stats-card orange">
+                        <div class="text-sm font-semibold opacity-90 mb-2">Produtos em Estoque</div>
+                        <div id="stat-produtos" class="text-4xl font-black">0</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="card-premium p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4">Vendas por Categoria</h3>
+                        <canvas id="chart-categorias"></canvas>
+                    </div>
+                    <div class="card-premium p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4">Faturamento Semanal</h3>
+                        <canvas id="chart-vendas"></canvas>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6 mt-6">
+                    <div class="card-premium p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4">⚠️ Produtos com Estoque Baixo</h3>
+                        <div id="estoque-baixo"></div>
+                    </div>
+                    <div class="card-premium p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4">📅 Produtos Próximos ao Vencimento</h3>
+                        <div id="produtos-vencer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PDV -->
+            <div id="page-pdv" class="tab-content">
+                <div class="grid grid-cols-3 gap-6">
+                    <div class="col-span-2 card-premium p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4">Carrinho de Vendas</h3>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Bipagem / Código do Produto</label>
+                            <input type="text" id="input-bipar" placeholder="Digite ou bipe o código do produto" class="w-full" autofocus>
+                        </div>
+
+                        <div id="carrinho-lista" class="mb-4">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th>Qtd</th>
+                                        <th>Preço Un.</th>
+                                        <th>Subtotal</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="carrinho-items">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-slate-400">Carrinho vazio</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <button onclick="App.limparCarrinho()" class="btn-danger">Limpar Carrinho</button>
+                            <button onclick="App.addVenda()" class="btn-success flex-1">Finalizar Venda (F2)</button>
+                        </div>
+                    </div>
+
+                    <div class="card-premium p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4">Resumo</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Subtotal:</span>
+                                <span id="resumo-subtotal" class="font-bold">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between text-2xl font-black text-blue-600">
+                                <span>TOTAL:</span>
+                                <span id="resumo-total">R$ 0,00</span>
+                            </div>
+                            
+                            <div class="pt-4 border-t">
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">Método de Pagamento</label>
+                                <select id="metodo-pagamento" class="w-full">
+                                    <option value="Dinheiro">Dinheiro</option>
+                                    <option value="Débito">Débito</option>
+                                    <option value="Crédito">Crédito</option>
+                                    <option value="PIX">PIX</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-premium p-6 mt-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Produtos Disponíveis</h3>
+                    <div id="produtos-rapidos" class="grid grid-cols-4 gap-3"></div>
+                </div>
+            </div>
+
+            <!-- ESTOQUE -->
+            <div id="page-estoque" class="tab-content">
+                <div class="flex gap-6">
+                    <div class="w-64 card-premium p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4">Categorias</h3>
+                        <div id="categoria-filtros" class="space-y-2"></div>
+                        
+                        <div class="mt-6 pt-6 border-t">
+                            <button onclick="App.mostrarNovaCategoria()" class="btn-primary w-full text-sm">+ Nova Categoria</button>
+                        </div>
+                    </div>
+
+                    <div class="flex-1">
+                        <div class="card-premium p-6 mb-6">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-bold text-slate-800">Gerenciar Produtos</h3>
+                                <button onclick="App.mostrarFormProduto()" class="btn-primary">+ Novo Produto</button>
+                            </div>
+                        </div>
+
+                        <!-- Form Produto (oculto) -->
+                        <div id="form-produto-container" class="card-premium p-6 mb-6" style="display: none;">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">Cadastrar Produto</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Código</label>
+                                    <input type="text" id="prod-cod" class="w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Nome</label>
+                                    <input type="text" id="prod-nome" class="w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Categoria</label>
+                                    <select id="prod-cat" class="w-full"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Data de Validade</label>
+                                    <input type="date" id="prod-validade" class="w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Custo (R$)</label>
+                                    <input type="number" step="0.01" id="prod-custo" class="w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Venda (R$)</label>
+                                    <input type="number" step="0.01" id="prod-venda" class="w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Estoque</label>
+                                    <input type="number" id="prod-estoque" class="w-full">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Estoque Mínimo</label>
+                                    <input type="number" id="prod-min" class="w-full">
+                                </div>
+                            </div>
+                            <div class="flex gap-4 mt-4">
+                                <button onclick="App.salvarProduto()" class="btn-success">Salvar Produto</button>
+                                <button onclick="App.cancelarFormProduto()" class="btn-danger">Cancelar</button>
+                            </div>
+                        </div>
+
+                        <div class="card-premium p-6 mb-6">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">📅 Alertas de Vencimento</h3>
+                            <div id="alertas-vencimento-estoque"></div>
+                        </div>
+
+                        <div class="card-premium p-6">
+                            <div id="tabela-produtos"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FINANCEIRO -->
+            <div id="page-financeiro" class="tab-content">
+                <div class="card-premium p-6 mb-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Filtrar por Período</h3>
+                    <div class="flex gap-4 items-end">
+                        <div class="flex-1">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Data Inicial</label>
+                            <input type="date" id="data-inicio" class="w-full">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Data Final</label>
+                            <input type="date" id="data-fim" class="w-full">
+                        </div>
+                        <button onclick="App.filtrarFinanceiro()" class="btn-primary">Filtrar</button>
+                        <button onclick="App.limparFiltroFinanceiro()" class="btn-danger">Limpar</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-6 mb-6">
+                    <div class="stats-card">
+                        <div class="text-sm font-semibold opacity-90 mb-2">Faturamento Período</div>
+                        <div id="fin-faturamento" class="text-3xl font-black">R$ 0,00</div>
+                    </div>
+                    <div class="stats-card green">
+                        <div class="text-sm font-semibold opacity-90 mb-2">Lucro Líquido Período</div>
+                        <div id="fin-lucro" class="text-3xl font-black">R$ 0,00</div>
+                    </div>
+                    <div class="stats-card orange">
+                        <div class="text-sm font-semibold opacity-90 mb-2">Vendas Realizadas</div>
+                        <div id="fin-vendas" class="text-3xl font-black">0</div>
+                    </div>
+                </div>
+
+                <div class="card-premium p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Histórico de Vendas</h3>
+                    <div id="tabela-vendas"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // ========================================
+        // CONFIGURAÇÃO E STATE GLOBAL
+        // ========================================
+        const State = {
+            produtos: JSON.parse(localStorage.getItem('db_prod')) || [],
+            categorias: JSON.parse(localStorage.getItem('db_cat')) || ["Cervejas", "Refrigerantes", "Águas", "Sucos"],
+            vendas: JSON.parse(localStorage.getItem('db_vendas')) || [],
+            carrinho: [],
+            categoriaFiltro: 'Todas',
+            editandoProduto: null,
+            diasAlertaVencimento: 30 // Alertar produtos que vencem em até 30 dias
+        };
+
+        const App = {
+            state: State,
+
+            // ========================================
+            // INICIALIZAÇÃO
+            // ========================================
+            init() {
+                this.setupClock();
+                this.setupKeyboard();
+                this.navigate('dashboard');
+                this.carregarDadosExemplo();
+            },
+
+            carregarDadosExemplo() {
+                // Dados de exemplo (primeira vez)
+                if (this.state.produtos.length === 0) {
+                    const hoje = new Date();
+                    const daqui20Dias = new Date(hoje.getTime() + (20 * 24 * 60 * 60 * 1000));
+                    const daqui60Dias = new Date(hoje.getTime() + (60 * 24 * 60 * 60 * 1000));
+                    const daqui90Dias = new Date(hoje.getTime() + (90 * 24 * 60 * 60 * 1000));
+                    
+                    this.state.produtos = [
+                        {id: 1, cod: '001', nome: 'Brahma Latão 473ml', cat: 'Cervejas', custo: 3.50, venda: 5.00, estoque: 120, min: 20, validade: daqui60Dias.toISOString().split('T')[0]},
+                        {id: 2, cod: '002', nome: 'Coca-Cola 2L', cat: 'Refrigerantes', custo: 5.00, venda: 8.00, estoque: 50, min: 15, validade: daqui90Dias.toISOString().split('T')[0]},
+                        {id: 3, cod: '003', nome: 'Água Mineral 500ml', cat: 'Águas', custo: 1.00, venda: 2.00, estoque: 200, min: 30, validade: daqui20Dias.toISOString().split('T')[0]},
+                        {id: 4, cod: '004', nome: 'Skol Lata 350ml', cat: 'Cervejas', custo: 2.50, venda: 4.00, estoque: 8, min: 20, validade: daqui60Dias.toISOString().split('T')[0]},
+                    ];
+                    this.save();
+                }
+            },
+
+            // ========================================
+            // PERSISTÊNCIA DE DADOS
+            // ========================================
+            save() {
+                localStorage.setItem('db_prod', JSON.stringify(this.state.produtos));
+                localStorage.setItem('db_cat', JSON.stringify(this.state.categorias));
+                localStorage.setItem('db_vendas', JSON.stringify(this.state.vendas));
+            },
+
+            // ========================================
+            // CONFIGURAÇÕES INICIAIS
+            // ========================================
+            setupClock() {
+                setInterval(() => {
+                    const now = new Date();
+                    const time = now.toLocaleTimeString('pt-BR');
+                    document.getElementById('clock').textContent = time;
+                }, 1000);
+            },
+
+            setupKeyboard() {
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'F2') {
+                        e.preventDefault();
+                        this.addVenda();
+                    }
+                });
+
+                // Input bipagem
+                document.addEventListener('DOMContentLoaded', () => {
+                    const inputBipar = document.getElementById('input-bipar');
+                    if (inputBipar) {
+                        inputBipar.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                this.adicionarAoCarrinho(e.target.value);
+                                e.target.value = '';
+                            }
+                        });
+                    }
+                });
+            },
+
+            // ========================================
+            // NAVEGAÇÃO
+            // ========================================
+            navigate(page) {
+                // Atualizar título
+                const titles = {
+                    dashboard: 'Dashboard',
+                    pdv: 'PDV - Ponto de Venda',
+                    estoque: 'Estoque',
+                    financeiro: 'Financeiro'
+                };
+                document.getElementById('page-title').textContent = titles[page];
+
+                // Atualizar sidebar
+                document.querySelectorAll('#main-nav button').forEach(btn => {
+                    if (btn.dataset.page === page) {
+                        btn.classList.add('sidebar-active');
+                    } else {
+                        btn.classList.remove('sidebar-active');
+                    }
+                });
+
+                // Atualizar conteúdo
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.getElementById('page-' + page).classList.add('active');
+
+                // Renderizar página
+                if (page === 'dashboard') this.renderDash();
+                if (page === 'pdv') this.renderPDV();
+                if (page === 'estoque') this.renderEstoque();
+                if (page === 'financeiro') this.renderFinanceiro();
+            },
+
+            // ========================================
+            // MÓDULO: DASHBOARD
+            // ========================================
+            renderDash() {
+                // Calcular estatísticas
+                const totalFaturamento = this.state.vendas.reduce((sum, v) => sum + v.total, 0);
+                const totalLucro = this.state.vendas.reduce((sum, v) => sum + v.lucro, 0);
+                const totalProdutos = this.state.produtos.reduce((sum, p) => sum + p.estoque, 0);
+
+                document.getElementById('stat-faturamento').textContent = this.formatMoeda(totalFaturamento);
+                document.getElementById('stat-lucro').textContent = this.formatMoeda(totalLucro);
+                document.getElementById('stat-produtos').textContent = totalProdutos;
+
+                // Gráfico de categorias
+                this.renderChartCategorias();
+                this.renderChartVendas();
+
+                // Estoque baixo
+                this.renderEstoqueBaixo();
+                // Produtos a vencer
+                this.renderProdutosAVencer();
+            },
+
+            renderEstoqueBaixo() {
+                const estoqueBaixo = this.state.produtos.filter(p => p.estoque <= p.min);
+                const container = document.getElementById('estoque-baixo');
+                if (estoqueBaixo.length === 0) {
+                    container.innerHTML = '<p class="text-slate-400 text-sm">✅ Nenhum produto com estoque baixo</p>';
+                } else {
+                    container.innerHTML = `
+                        <div class="space-y-2">
+                            ${estoqueBaixo.map(p => `
+                                <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded-lg">
+                                    <div class="font-bold text-sm text-slate-800">${p.nome}</div>
+                                    <div class="text-xs text-slate-600 mt-1">
+                                        Estoque: <strong class="text-red-600">${p.estoque}</strong> / Mínimo: ${p.min}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+            },
+
+            renderProdutosAVencer() {
+                const produtosAVencer = this.getProdutosAVencer();
+                const container = document.getElementById('produtos-vencer');
+                
+                if (produtosAVencer.length === 0) {
+                    container.innerHTML = '<p class="text-slate-400 text-sm">✅ Nenhum produto próximo ao vencimento</p>';
+                } else {
+                    container.innerHTML = `
+                        <div class="space-y-2">
+                            ${produtosAVencer.map(p => {
+                                const diasRestantes = this.calcularDiasAteVencer(p.validade);
+                                const corAlerta = diasRestantes <= 7 ? 'red' : diasRestantes <= 15 ? 'orange' : 'yellow';
+                                return `
+                                    <div class="bg-${corAlerta}-50 border-l-4 border-${corAlerta}-500 p-3 rounded-lg">
+                                        <div class="font-bold text-sm text-slate-800">${p.nome}</div>
+                                        <div class="text-xs text-slate-600 mt-1">
+                                            Vence em: <strong class="text-${corAlerta}-600">${diasRestantes} dias</strong>
+                                            (${new Date(p.validade).toLocaleDateString('pt-BR')})
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+            },
+
+            getProdutosAVencer() {
+                const hoje = new Date();
+                return this.state.produtos.filter(p => {
+                    if (!p.validade) return false;
+                    const diasRestantes = this.calcularDiasAteVencer(p.validade);
+                    return diasRestantes >= 0 && diasRestantes <= this.state.diasAlertaVencimento;
+                }).sort((a, b) => new Date(a.validade) - new Date(b.validade));
+            },
+
+            calcularDiasAteVencer(dataValidade) {
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+                const vencimento = new Date(dataValidade);
+                vencimento.setHours(0, 0, 0, 0);
+                const diffTime = vencimento - hoje;
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            },
+
+            renderChartCategorias() {
+                const ctx = document.getElementById('chart-categorias');
+                if (window.chartCat) window.chartCat.destroy();
+
+                const vendidosPorCat = {};
+                this.state.categorias.forEach(cat => vendidosPorCat[cat] = 0);
+
+                this.state.vendas.forEach(venda => {
+                    venda.itens.forEach(item => {
+                        const prod = this.state.produtos.find(p => p.id === item.id);
+                        if (prod) {
+                            vendidosPorCat[prod.cat] = (vendidosPorCat[prod.cat] || 0) + (item.qtd * item.preco);
+                        }
+                    });
+                });
+
+                window.chartCat = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(vendidosPorCat),
+                        datasets: [{
+                            data: Object.values(vendidosPorCat),
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            },
+
+            renderChartVendas() {
+                const ctx = document.getElementById('chart-vendas');
+                if (window.chartVendas) window.chartVendas.destroy();
+
+                // Últimos 7 dias
+                const dias = [];
+                const valores = [];
+                for (let i = 6; i >= 0; i--) {
+                    const data = new Date();
+                    data.setDate(data.getDate() - i);
+                    const dataStr = data.toISOString().split('T')[0];
+                    dias.push(data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+                    
+                    const vendasDia = this.state.vendas
+                        .filter(v => v.data.startsWith(dataStr))
+                        .reduce((sum, v) => sum + v.total, 0);
+                    valores.push(vendasDia);
+                }
+
+                window.chartVendas = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dias,
+                        datasets: [{
+                            label: 'Faturamento (R$)',
+                            data: valores,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            },
+
+            // ========================================
+            // MÓDULO: PDV (PONTO DE VENDA)
+            // ========================================
+            renderPDV() {
+                this.atualizarCarrinho();
+                this.renderProdutosRapidos();
+                
+                // Focus no input
+                setTimeout(() => {
+                    const input = document.getElementById('input-bipar');
+                    if (input) input.focus();
+                }, 100);
+            },
+
+            renderProdutosRapidos() {
+                const container = document.getElementById('produtos-rapidos');
+                const produtos = this.state.produtos.filter(p => p.estoque > 0);
+                
+                container.innerHTML = produtos.map(p => `
+                    <button onclick="App.adicionarAoCarrinho('${p.cod}')" 
+                            class="card-premium p-4 text-left hover:shadow-lg transition-all">
+                        <div class="font-bold text-slate-800 text-sm mb-1">${p.nome}</div>
+                        <div class="text-xs text-slate-500 mb-2">${p.cod}</div>
+                        <div class="text-lg font-black text-blue-600">${this.formatMoeda(p.venda)}</div>
+                        <div class="text-xs text-slate-400 mt-1">Estoque: ${p.estoque}</div>
+                    </button>
+                `).join('');
+            },
+
+            adicionarAoCarrinho(codigo) {
+                const produto = this.state.produtos.find(p => p.cod === codigo);
+                if (!produto) {
+                    alert('Produto não encontrado!');
+                    return;
+                }
+                if (produto.estoque <= 0) {
+                    alert('Produto sem estoque!');
+                    return;
+                }
+
+                const itemExistente = this.state.carrinho.find(item => item.id === produto.id);
+                if (itemExistente) {
+                    if (itemExistente.qtd < produto.estoque) {
+                        itemExistente.qtd++;
+                    } else {
+                        alert('Estoque insuficiente!');
+                        return;
+                    }
+                } else {
+                    this.state.carrinho.push({
+                        id: produto.id,
+                        nome: produto.nome,
+                        preco: produto.venda,
+                        custo: produto.custo,
+                        qtd: 1
+                    });
+                }
+
+                this.atualizarCarrinho();
+            },
+
+            removerDoCarrinho(id) {
+                this.state.carrinho = this.state.carrinho.filter(item => item.id !== id);
+                this.atualizarCarrinho();
+            },
+
+            alterarQtdCarrinho(id, delta) {
+                const item = this.state.carrinho.find(i => i.id === id);
+                if (!item) return;
+
+                const produto = this.state.produtos.find(p => p.id === id);
+                item.qtd += delta;
+
+                if (item.qtd <= 0) {
+                    this.removerDoCarrinho(id);
+                } else if (item.qtd > produto.estoque) {
+                    alert('Estoque insuficiente!');
+                    item.qtd = produto.estoque;
+                }
+
+                this.atualizarCarrinho();
+            },
+
+            atualizarCarrinho() {
+                const tbody = document.getElementById('carrinho-items');
+                const total = this.state.carrinho.reduce((sum, item) => sum + (item.preco * item.qtd), 0);
+
+                if (this.state.carrinho.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-slate-400">Carrinho vazio</td></tr>';
+                } else {
+                    tbody.innerHTML = this.state.carrinho.map(item => `
+                        <tr>
+                            <td><strong>${item.nome}</strong></td>
+                            <td>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="App.alterarQtdCarrinho(${item.id}, -1)" 
+                                            class="bg-slate-200 hover:bg-slate-300 w-6 h-6 rounded font-bold">-</button>
+                                    <span class="font-bold">${item.qtd}</span>
+                                    <button onclick="App.alterarQtdCarrinho(${item.id}, 1)" 
+                                            class="bg-slate-200 hover:bg-slate-300 w-6 h-6 rounded font-bold">+</button>
+                                </div>
+                            </td>
+                            <td>${this.formatMoeda(item.preco)}</td>
+                            <td class="font-bold">${this.formatMoeda(item.preco * item.qtd)}</td>
+                            <td>
+                                <button onclick="App.removerDoCarrinho(${item.id})" 
+                                        class="text-red-600 hover:text-red-800 font-bold">✕</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                document.getElementById('resumo-subtotal').textContent = this.formatMoeda(total);
+                document.getElementById('resumo-total').textContent = this.formatMoeda(total);
+            },
+
+            limparCarrinho() {
+                if (this.state.carrinho.length === 0) return;
+                if (confirm('Deseja limpar o carrinho?')) {
+                    this.state.carrinho = [];
+                    this.atualizarCarrinho();
+                }
+            },
+
+            addVenda() {
+                if (this.state.carrinho.length === 0) {
+                    alert('Carrinho vazio!');
+                    return;
+                }
+
+                const total = this.state.carrinho.reduce((sum, item) => sum + (item.preco * item.qtd), 0);
+                const lucro = this.state.carrinho.reduce((sum, item) => sum + ((item.preco - item.custo) * item.qtd), 0);
+                const metodo = document.getElementById('metodo-pagamento').value;
+
+                const venda = {
+                    id: Date.now(),
+                    data: new Date().toISOString(),
+                    itens: [...this.state.carrinho],
+                    total: total,
+                    lucro: lucro,
+                    metodo: metodo
+                };
+
+                // Baixar estoque
+                this.state.carrinho.forEach(item => {
+                    const produto = this.state.produtos.find(p => p.id === item.id);
+                    if (produto) {
+                        produto.estoque -= item.qtd;
+                    }
+                });
+
+                this.state.vendas.push(venda);
+                this.state.carrinho = [];
+                this.save();
+
+                alert(`Venda finalizada!\nTotal: ${this.formatMoeda(total)}\nMétodo: ${metodo}`);
+                this.atualizarCarrinho();
+                this.renderProdutosRapidos();
+            },
+
+            // ========================================
+            // MÓDULO: ESTOQUE
+            // ========================================
+            renderEstoque() {
+                this.renderCategoriaFiltros();
+                this.renderTabelaProdutos();
+                this.renderSelectCategorias();
+                this.renderAlertasVencimentoEstoque();
+            },
+
+            renderAlertasVencimentoEstoque() {
+                const produtosAVencer = this.getProdutosAVencer();
+                const container = document.getElementById('alertas-vencimento-estoque');
+                
+                if (produtosAVencer.length === 0) {
+                    container.innerHTML = '<p class="text-slate-400 text-sm">✅ Nenhum produto próximo ao vencimento</p>';
+                } else {
+                    const totalProdutos = produtosAVencer.length;
+                    const totalEstoque = produtosAVencer.reduce((sum, p) => sum + p.estoque, 0);
+                    
+                    container.innerHTML = `
+                        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg mb-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="font-bold text-yellow-800">⚠️ Atenção: ${totalProdutos} produto(s) próximo(s) ao vencimento</div>
+                                    <div class="text-sm text-yellow-700 mt-1">Total de ${totalEstoque} unidades em estoque</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            ${produtosAVencer.map(p => {
+                                const diasRestantes = this.calcularDiasAteVencer(p.validade);
+                                let corAlerta, textoUrgencia;
+                                if (diasRestantes <= 7) {
+                                    corAlerta = 'red';
+                                    textoUrgencia = 'URGENTE';
+                                } else if (diasRestantes <= 15) {
+                                    corAlerta = 'orange';
+                                    textoUrgencia = 'ATENÇÃO';
+                                } else {
+                                    corAlerta = 'yellow';
+                                    textoUrgencia = 'ALERTA';
+                                }
+                                return `
+                                    <div class="bg-white border-2 border-${corAlerta}-300 p-3 rounded-xl">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <span class="badge badge-low text-xs">${textoUrgencia}</span>
+                                            <span class="text-xs font-bold text-slate-500">${p.cod}</span>
+                                        </div>
+                                        <div class="font-bold text-sm text-slate-800 mb-1">${p.nome}</div>
+                                        <div class="text-xs text-slate-600">
+                                            <div>Vence em: <strong class="text-${corAlerta}-600">${diasRestantes} dias</strong></div>
+                                            <div>Data: ${new Date(p.validade).toLocaleDateString('pt-BR')}</div>
+                                            <div>Estoque: <strong>${p.estoque} un.</strong></div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+            },
+
+            renderCategoriaFiltros() {
+                const container = document.getElementById('categoria-filtros');
+                container.innerHTML = `
+                    <button onclick="App.filtrarCategoria('Todas')" 
+                            class="w-full text-left px-4 py-3 rounded-xl font-semibold transition-all ${this.state.categoriaFiltro === 'Todas' ? 'bg-blue-500 text-white' : 'hover:bg-slate-100'}">
+                        Todas
+                    </button>
+                    ${this.state.categorias.map(cat => `
+                        <button onclick="App.filtrarCategoria('${cat}')" 
+                                class="w-full text-left px-4 py-3 rounded-xl font-semibold transition-all ${this.state.categoriaFiltro === cat ? 'bg-blue-500 text-white' : 'hover:bg-slate-100'}">
+                            ${cat}
+                        </button>
+                    `).join('')}
+                `;
+            },
+
+            filtrarCategoria(cat) {
+                this.state.categoriaFiltro = cat;
+                this.renderCategoriaFiltros();
+                this.renderTabelaProdutos();
+            },
+
+            renderTabelaProdutos() {
+                const produtos = this.state.categoriaFiltro === 'Todas' 
+                    ? this.state.produtos 
+                    : this.state.produtos.filter(p => p.cat === this.state.categoriaFiltro);
+
+                const container = document.getElementById('tabela-produtos');
+                if (produtos.length === 0) {
+                    container.innerHTML = '<p class="text-slate-400 text-center py-8">Nenhum produto cadastrado nesta categoria</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Categoria</th>
+                                <th>Validade</th>
+                                <th>Custo</th>
+                                <th>Venda</th>
+                                <th>Estoque</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${produtos.map(p => {
+                                const diasVencer = p.validade ? this.calcularDiasAteVencer(p.validade) : null;
+                                const statusVencimento = diasVencer !== null && diasVencer <= 30 && diasVencer >= 0;
+                                return `
+                                    <tr ${statusVencimento ? 'style="background: #fef3c7;"' : ''}>
+                                        <td><strong>${p.cod}</strong></td>
+                                        <td>${p.nome}</td>
+                                        <td><span class="badge" style="background: #dbeafe; color: #1e40af">${p.cat}</span></td>
+                                        <td>
+                                            ${p.validade ? `
+                                                <div class="text-sm">
+                                                    ${new Date(p.validade).toLocaleDateString('pt-BR')}
+                                                    ${statusVencimento ? `<br><span class="badge badge-low">Vence em ${diasVencer}d</span>` : ''}
+                                                </div>
+                                            ` : '<span class="text-slate-400">-</span>'}
+                                        </td>
+                                        <td>${this.formatMoeda(p.custo)}</td>
+                                        <td class="font-bold">${this.formatMoeda(p.venda)}</td>
+                                        <td><strong>${p.estoque}</strong></td>
+                                        <td>
+                                            <span class="badge ${p.estoque <= p.min ? 'badge-low' : 'badge-ok'}">
+                                                ${p.estoque <= p.min ? 'BAIXO' : 'OK'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button onclick="App.editarProduto(${p.id})" 
+                                                    class="text-blue-600 hover:text-blue-800 font-semibold mr-2">Editar</button>
+                                            <button onclick="App.deletarProduto(${p.id})" 
+                                                    class="text-red-600 hover:text-red-800 font-semibold">Excluir</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            },
+
+            renderSelectCategorias() {
+                const select = document.getElementById('prod-cat');
+                if (select) {
+                    select.innerHTML = this.state.categorias.map(cat => 
+                        `<option value="${cat}">${cat}</option>`
+                    ).join('');
+                }
+            },
+
+            mostrarFormProduto() {
+                this.state.editandoProduto = null;
+                document.getElementById('form-produto-container').style.display = 'block';
+                document.getElementById('prod-cod').value = '';
+                document.getElementById('prod-nome').value = '';
+                document.getElementById('prod-validade').value = '';
+                document.getElementById('prod-custo').value = '';
+                document.getElementById('prod-venda').value = '';
+                document.getElementById('prod-estoque').value = '';
+                document.getElementById('prod-min').value = '';
+                this.renderSelectCategorias();
+            },
+
+            cancelarFormProduto() {
+                document.getElementById('form-produto-container').style.display = 'none';
+                this.state.editandoProduto = null;
+            },
+
+            salvarProduto() {
+                const cod = document.getElementById('prod-cod').value;
+                const nome = document.getElementById('prod-nome').value;
+                const cat = document.getElementById('prod-cat').value;
+                const validade = document.getElementById('prod-validade').value;
+                const custo = parseFloat(document.getElementById('prod-custo').value);
+                const venda = parseFloat(document.getElementById('prod-venda').value);
+                const estoque = parseInt(document.getElementById('prod-estoque').value);
+                const min = parseInt(document.getElementById('prod-min').value);
+
+                if (!cod || !nome || !custo || !venda || isNaN(estoque) || isNaN(min)) {
+                    alert('Preencha todos os campos obrigatórios!');
+                    return;
+                }
+
+                if (this.state.editandoProduto) {
+                    const produto = this.state.produtos.find(p => p.id === this.state.editandoProduto);
+                    produto.cod = cod;
+                    produto.nome = nome;
+                    produto.cat = cat;
+                    produto.validade = validade || null;
+                    produto.custo = custo;
+                    produto.venda = venda;
+                    produto.estoque = estoque;
+                    produto.min = min;
+                } else {
+                    const id = this.state.produtos.length > 0 
+                        ? Math.max(...this.state.produtos.map(p => p.id)) + 1 
+                        : 1;
+                    
+                    this.state.produtos.push({
+                        id, cod, nome, cat, validade: validade || null, custo, venda, estoque, min
+                    });
+                }
+
+                this.save();
+                this.cancelarFormProduto();
+                this.renderTabelaProdutos();
+            },
+
+            editarProduto(id) {
+                const produto = this.state.produtos.find(p => p.id === id);
+                if (!produto) return;
+
+                this.state.editandoProduto = id;
+                document.getElementById('form-produto-container').style.display = 'block';
+                document.getElementById('prod-cod').value = produto.cod;
+                document.getElementById('prod-nome').value = produto.nome;
+                document.getElementById('prod-validade').value = produto.validade || '';
+                document.getElementById('prod-custo').value = produto.custo;
+                document.getElementById('prod-venda').value = produto.venda;
+                document.getElementById('prod-estoque').value = produto.estoque;
+                document.getElementById('prod-min').value = produto.min;
+                this.renderSelectCategorias();
+                document.getElementById('prod-cat').value = produto.cat;
+            },
+
+            deletarProduto(id) {
+                if (!confirm('Deseja realmente excluir este produto?')) return;
+                this.state.produtos = this.state.produtos.filter(p => p.id !== id);
+                this.save();
+                this.renderTabelaProdutos();
+            },
+
+            mostrarNovaCategoria() {
+                const nome = prompt('Nome da nova categoria:');
+                if (nome && nome.trim()) {
+                    this.state.categorias.push(nome.trim());
+                    this.save();
+                    this.renderCategoriaFiltros();
+                    this.renderSelectCategorias();
+                }
+            },
+
+            // ========================================
+            // MÓDULO: FINANCEIRO
+            // ========================================
+            renderFinanceiro() {
+                // Definir datas padrão (último mês)
+                const hoje = new Date();
+                const mesAtras = new Date();
+                mesAtras.setMonth(hoje.getMonth() - 1);
+
+                document.getElementById('data-inicio').value = mesAtras.toISOString().split('T')[0];
+                document.getElementById('data-fim').value = hoje.toISOString().split('T')[0];
+
+                this.filtrarFinanceiro();
+            },
+
+            filtrarFinanceiro() {
+                const dataInicio = document.getElementById('data-inicio').value;
+                const dataFim = document.getElementById('data-fim').value;
+
+                let vendasFiltradas = this.state.vendas;
+                if (dataInicio && dataFim) {
+                    vendasFiltradas = this.state.vendas.filter(v => {
+                        const dataVenda = v.data.split('T')[0];
+                        return dataVenda >= dataInicio && dataVenda <= dataFim;
+                    });
+                }
+
+                const totalFaturamento = vendasFiltradas.reduce((sum, v) => sum + v.total, 0);
+                const totalLucro = vendasFiltradas.reduce((sum, v) => sum + v.lucro, 0);
+
+                document.getElementById('fin-faturamento').textContent = this.formatMoeda(totalFaturamento);
+                document.getElementById('fin-lucro').textContent = this.formatMoeda(totalLucro);
+                document.getElementById('fin-vendas').textContent = vendasFiltradas.length;
+
+                this.renderTabelaVendas(vendasFiltradas);
+            },
+
+            limparFiltroFinanceiro() {
+                document.getElementById('data-inicio').value = '';
+                document.getElementById('data-fim').value = '';
+                this.filtrarFinanceiro();
+            },
+
+            renderTabelaVendas(vendas) {
+                const container = document.getElementById('tabela-vendas');
+                if (vendas.length === 0) {
+                    container.innerHTML = '<p class="text-slate-400 text-center py-8">Nenhuma venda encontrada no período</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Data/Hora</th>
+                                <th>Itens</th>
+                                <th>Total</th>
+                                <th>Lucro</th>
+                                <th>Método</th>
+                                <th>Detalhes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${vendas.slice().reverse().map(v => {
+                                const data = new Date(v.data);
+                                const dataFormatada = data.toLocaleDateString('pt-BR');
+                                const horaFormatada = data.toLocaleTimeString('pt-BR');
+                                return `
+                                    <tr>
+                                        <td><strong>#${v.id}</strong></td>
+                                        <td>${dataFormatada} ${horaFormatada}</td>
+                                        <td>${v.itens.length} item(ns)</td>
+                                        <td class="font-bold text-blue-600">${this.formatMoeda(v.total)}</td>
+                                        <td class="font-bold text-green-600">${this.formatMoeda(v.lucro)}</td>
+                                        <td><span class="badge" style="background: #dbeafe; color: #1e40af">${v.metodo}</span></td>
+                                        <td>
+                                            <button onclick="App.verDetalhesVenda(${v.id})" 
+                                                    class="text-blue-600 hover:text-blue-800 font-semibold">Ver</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            },
+
+            verDetalhesVenda(id) {
+                const venda = this.state.vendas.find(v => v.id === id);
+                if (!venda) return;
+
+                const itensDescricao = venda.itens.map(item => 
+                    `${item.nome} - Qtd: ${item.qtd} - ${this.formatMoeda(item.preco)} = ${this.formatMoeda(item.preco * item.qtd)}`
+                ).join('\n');
+
+                alert(`Detalhes da Venda #${venda.id}\n\n${itensDescricao}\n\nTotal: ${this.formatMoeda(venda.total)}\nLucro: ${this.formatMoeda(venda.lucro)}\nMétodo: ${venda.metodo}`);
+            },
+
+            // ========================================
+            // UTILITÁRIOS
+            // ========================================
+            formatMoeda(valor) {
+                return new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                }).format(valor);
+            }
+        };
+
+        // Inicializar app
+        App.init();
+    </script>
+</body>
+</html>

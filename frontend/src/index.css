@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #f8fafc;
+}
+
+/* Scrollbar Personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Cards Premium */
+.card-premium {
+  @apply bg-white rounded-3xl shadow-sm border border-gray-100;
+}
+
+/* Botões */
+.btn-primary {
+  @apply px-6 py-3 bg-blue-500 text-white font-bold rounded-2xl hover:bg-blue-600 transition-all shadow-sm hover:shadow-md;
+}
+
+.btn-success {
+  @apply px-6 py-3 bg-green-500 text-white font-bold rounded-2xl hover:bg-green-600 transition-all shadow-sm hover:shadow-md;
+}
+
+.btn-danger {
+  @apply px-6 py-3 bg-red-500 text-white font-bold rounded-2xl hover:bg-red-600 transition-all shadow-sm hover:shadow-md;
+}
+
+/* Sidebar Active */
+.sidebar-active {
+  @apply bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg;
+}
+
+/* Inputs */
+input, select, textarea {
+  @apply px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+}
+
+/* Tabelas */
+table {
+  @apply w-full border-collapse;
+}
+
+thead {
+  @apply bg-slate-50;
+}
+
+th {
+  @apply text-left p-4 font-bold text-slate-700 border-b-2 border-gray-200;
+}
+
+td {
+  @apply p-4 border-b border-gray-100;
+}
+
+tr:hover {
+  @apply bg-gray-50;
+}
+
+/* Badges */
+.badge {
+  @apply inline-block px-3 py-1 rounded-lg text-xs font-bold;
+}
+
+.badge-low {
+  @apply bg-red-100 text-red-800;
+}
+
+.badge-ok {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-pix {
+  @apply bg-purple-100 text-purple-800;
+}
+
+.badge-debito {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.badge-credito {
+  @apply bg-orange-100 text-orange-800;
+}
