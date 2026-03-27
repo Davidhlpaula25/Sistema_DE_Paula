@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { produtoService, categoriaService } from '../services';
+import Alert from '../components/Alert';
+import Confirm from '../components/Confirm';
 
 const Estoque = () => {
   const [produtos, setProdutos] = useState([]);
@@ -10,6 +12,8 @@ const Estoque = () => {
   const [mostrarModalCategoria, setMostrarModalCategoria] = useState(false);
   const [categoriaEditando, setCategoriaEditando] = useState(null);
   const [formCategoria, setFormCategoria] = useState({ nome: '', descricao: '' });
+  const [alert, setAlert] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [form, setForm] = useState({
     codigo: '',
     nome: '',
@@ -24,6 +28,11 @@ const Estoque = () => {
   useEffect(() => {
     carregarDados();
   }, []);
+
+  const showAlert = (message, type = 'info') => {
+    setAlert({ message, type });
+    setTimeout(() => setAlert(null), 4000);
+  };
 
   const carregarDados = async () => {
     try {
@@ -61,10 +70,10 @@ const Estoque = () => {
       codigo: produto.codigo,
       nome: produto.nome,
       categoria_id: produto.categoria_id,
-      preco_compra: produto.preco_compra,
+      preco_compra: produto.custo || produto.preco_compra,
       preco_venda: produto.preco_venda,
       estoque_minimo: produto.estoque_minimo,
-      estoque_atual: produto.estoque_atual,
+      estoque_atual: produto.estoque,
       data_validade: produto.data_validade ? produto.data_validade.split('T')[0] : ''
     });
     setMostrarModal(true);
@@ -75,38 +84,48 @@ const Estoque = () => {
     
     try {
       const dados = {
-        ...form,
-        preco_compra: parseFloat(form.preco_compra),
+        codigo: form.codigo,
+        nome: form.nome,
+        categoria_id: parseInt(form.categoria_id),
+        custo: parseFloat(form.preco_compra),
         preco_venda: parseFloat(form.preco_venda),
         estoque_minimo: parseInt(form.estoque_minimo),
-        estoque_atual: parseInt(form.estoque_atual),
-        categoria_id: parseInt(form.categoria_id)
+        estoque: parseInt(form.estoque_atual),
+        data_validade: form.data_validade || null
       };
 
       if (produtoEditando) {
         await produtoService.update(produtoEditando.id, dados);
-        alert('Produto atualizado com sucesso!');
+        showAlert('Produto atualizado com sucesso!', 'success');
       } else {
         await produtoService.create(dados);
-        alert('Produto cadastrado com sucesso!');
+        showAlert('Produto cadastrado com sucesso!', 'success');
       }
 
       setMostrarModal(false);
       carregarDados();
     } catch (error) {
-      alert('Erro ao salvar produto: ' + error.message);
+      showAlert('Erro ao salvar produto: ' + (error.response?.data?.error || error.message), 'error');
     }
   };
 
-  const excluirProduto = async (id) => {
-    if (!window.confirm('Tem certeza que deseja excluir este produto?')) return;
+  const excluirProduto = (id) => {
+    setConfirmDelete({
+      type: 'produto',
+      id,
+      message: 'Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.'
+    });
+  };
 
+  const confirmarExclusaoProduto = async () => {
+    const id = confirmDelete.id;
+    setConfirmDelete(null);
     try {
       await produtoService.delete(id);
-      alert('Produto excluído com sucesso!');
+      showAlert('Produto excluído com sucesso!', 'success');
       carregarDados();
     } catch (error) {
-      alert('Erro ao excluir produto: ' + error.message);
+      showAlert('Erro ao excluir produto: ' + (error.response?.data?.error || error.message), 'error');
     }
   };
 
@@ -129,35 +148,43 @@ const Estoque = () => {
     try {
       if (categoriaEditando) {
         await categoriaService.update(categoriaEditando.id, formCategoria);
-        alert('Categoria atualizada com sucesso!');
+        showAlert('Categoria atualizada com sucesso!', 'success');
       } else {
         await categoriaService.create(formCategoria);
-        alert('Categoria cadastrada com sucesso!');
+        showAlert('Categoria cadastrada com sucesso!', 'success');
       }
 
       setMostrarModalCategoria(false);
       carregarDados();
     } catch (error) {
-      alert('Erro ao salvar categoria: ' + error.message);
+      showAlert('Erro ao salvar categoria: ' + (error.response?.data?.error || error.message), 'error');
     }
   };
 
-  const excluirCategoria = async (id) => {
+  const excluirCategoria = (id) => {
     const produtosNaCategoria = produtos.filter(p => p.categoria_id === id).length;
     
     if (produtosNaCategoria > 0) {
-      alert(`Não é possível excluir esta categoria pois existem ${produtosNaCategoria} produto(s) vinculado(s).`);
+      showAlert(`Não é possível excluir esta categoria pois existem ${produtosNaCategoria} produto(s) vinculado(s).`, 'warning');
       return;
     }
 
-    if (!window.confirm('Tem certeza que deseja excluir esta categoria?')) return;
+    setConfirmDelete({
+      type: 'categoria',
+      id,
+      message: 'Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.'
+    });
+  };
 
+  const confirmarExclusaoCategoria = async () => {
+    const id = confirmDelete.id;
+    setConfirmDelete(null);
     try {
       await categoriaService.delete(id);
-      alert('Categoria excluída com sucesso!');
+      showAlert('Categoria excluída com sucesso!', 'success');
       carregarDados();
     } catch (error) {
-      alert('Erro ao excluir categoria: ' + error.message);
+      showAlert('Erro ao excluir categoria: ' + (error.response?.data?.error || error.message), 'error');
     }
   };
 
@@ -182,6 +209,8 @@ const Estoque = () => {
 
   return (
     <div>
+      {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Gestão de Estoque</h1>
         <button onClick={abrirModalNovo} className="btn-primary">
@@ -261,7 +290,7 @@ const Estoque = () => {
               <tbody>
                 {produtosFiltrados.map(produto => {
                   const diasRestantes = getDiasRestantes(produto.data_validade);
-                  const estoqueAlerta = produto.estoque_atual <= produto.estoque_minimo;
+                  const estoqueAlerta = (produto.estoque || 0) <= produto.estoque_minimo;
 
                   return (
                     <tr key={produto.id}>
@@ -277,7 +306,7 @@ const Estoque = () => {
                       </td>
                       <td>
                         <span className={estoqueAlerta ? 'badge-low' : 'badge-ok'}>
-                          {produto.estoque_atual} un
+                          {produto.estoque || 0} un
                           {estoqueAlerta && ' ⚠️'}
                         </span>
                       </td>
@@ -481,6 +510,15 @@ const Estoque = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {confirmDelete && (
+        <Confirm
+          message={confirmDelete.message}
+          type="danger"
+          onConfirm={confirmDelete.type === 'produto' ? confirmarExclusaoProduto : confirmarExclusaoCategoria}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
     </div>
   );

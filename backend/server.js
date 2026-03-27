@@ -17,10 +17,12 @@ app.use(express.urlencoded({ extended: true }));
 const produtosRouter = require('./src/routes/produtos');
 const categoriasRouter = require('./src/routes/categorias');
 const vendasRouter = require('./src/routes/vendas');
+const caixasRouter = require('./src/routes/caixas');
 
 app.use('/api/produtos', produtosRouter);
 app.use('/api/categorias', categoriasRouter);
 app.use('/api/vendas', vendasRouter);
+app.use('/api/caixas', caixasRouter);
 
 // Rota de health check
 app.get('/api/health', (req, res) => {

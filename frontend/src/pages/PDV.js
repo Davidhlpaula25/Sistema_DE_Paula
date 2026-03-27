@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { produtoService, vendaService, categoriaService } from '../services';
+import caixaService from '../services/caixaService';
+import Alert from '../components/Alert';
 
 const PDV = () => {
   const [produtos, setProdutos] = useState([]);
@@ -9,6 +11,8 @@ const PDV = () => {
   const [categoriaSelecionada, setCategoriaSelecionada] = useState('');
   const [metodoPagamento, setMetodoPagamento] = useState('dinheiro');
   const [valorRecebido, setValorRecebido] = useState('');
+  const [alert, setAlert] = useState(null);
+  const [caixaAberto, setCaixaAberto] = useState(null);
   const inputBuscaRef = useRef(null);
 
   useEffect(() => {
@@ -26,14 +30,21 @@ const PDV = () => {
     return () => window.removeEventListener('keydown', handleF2);
   }, [carrinho]);
 
+  const showAlert = (message, type = 'info') => {
+    setAlert({ message, type });
+    setTimeout(() => setAlert(null), 4000);
+  };
+
   const carregarDados = async () => {
     try {
-      const [produtosData, categoriasData] = await Promise.all([
+      const [produtosData, categoriasData, caixa] = await Promise.all([
         produtoService.getAll(),
-        categoriaService.getAll()
+        categoriaService.getAll(),
+        caixaService.getCaixaAberto()
       ]);
       setProdutos(Array.isArray(produtosData) ? produtosData : []);
       setCategorias(Array.isArray(categoriasData) ? categoriasData : []);
+      setCaixaAberto(caixa);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setProdutos([]);
@@ -79,10 +90,10 @@ const PDV = () => {
         if (produto) {
           adicionarAoCarrinho(produto);
         } else {
-          alert('Produto não encontrado!');
+          showAlert('Produto não encontrado!', 'warning');
         }
       } catch (error) {
-        alert('Erro ao buscar produto!');
+        showAlert('Erro ao buscar produto!', 'error');
       }
     }
   };
@@ -93,18 +104,23 @@ const PDV = () => {
 
   const calcularLucro = () => {
     return carrinho.reduce((lucro, item) => 
-      lucro + ((item.preco_venda - item.preco_compra) * item.quantidade), 0
+      lucro + (((parseFloat(item.preco_venda) || 0) - (parseFloat(item.custo) || 0)) * item.quantidade), 0
     );
   };
 
   const finalizarVenda = async () => {
+    if (!caixaAberto) {
+      showAlert('Nenhum caixa aberto! Abra o caixa na Dashboard antes de realizar vendas.', 'error');
+      return;
+    }
+
     if (carrinho.length === 0) {
-      alert('Carrinho vazio!');
+      showAlert('Carrinho vazio!', 'warning');
       return;
     }
 
     if (metodoPagamento === 'dinheiro' && !valorRecebido) {
-      alert('Informe o valor recebido!');
+      showAlert('Informe o valor recebido!', 'warning');
       return;
     }
 
@@ -114,7 +130,7 @@ const PDV = () => {
     const troco = metodoPagamento === 'dinheiro' ? recebido - total : 0;
 
     if (metodoPagamento === 'dinheiro' && recebido < total) {
-      alert('Valor recebido insuficiente!');
+      showAlert('Valor recebido insuficiente!', 'error');
       return;
     }
 
@@ -122,18 +138,23 @@ const PDV = () => {
       await vendaService.create({
         itens: carrinho.map(item => ({
           produto_id: item.id,
+          produto_nome: item.nome,
           quantidade: item.quantidade,
-          preco_unitario: item.preco_venda
+          preco_unitario: parseFloat(item.preco_venda),
+          custo_unitario: parseFloat(item.custo || 0),
+          subtotal: parseFloat(item.preco_venda) * item.quantidade
         })),
-        metodo_pagamento: metodoPagamento,
-        valor_total: total,
-        lucro_liquido: lucro
+        subtotal: total,
+        desconto: 0,
+        total: total,
+        lucro: lucro,
+        metodo_pagamento: metodoPagamento
       });
 
       if (metodoPagamento === 'dinheiro' && troco > 0) {
-        alert(`Venda finalizada! Troco: R$ ${troco.toFixed(2)}`);
+        showAlert(`Venda finalizada! Troco: R$ ${troco.toFixed(2)}`, 'success');
       } else {
-        alert('Venda finalizada com sucesso!');
+        showAlert('Venda finalizada com sucesso!', 'success');
       }
 
       setCarrinho([]);
@@ -142,18 +163,44 @@ const PDV = () => {
       inputBuscaRef.current?.focus();
       carregarDados();
     } catch (error) {
-      alert('Erro ao finalizar venda: ' + error.message);
+      showAlert('Erro ao finalizar venda: ' + (error.response?.data?.error || error.message), 'error');
     }
   };
 
   const produtosFiltrados = produtos.filter(p => {
     const matchCategoria = !categoriaSelecionada || p.categoria_id === parseInt(categoriaSelecionada);
     const matchBusca = !busca || p.nome.toLowerCase().includes(busca.toLowerCase()) || p.codigo.includes(busca);
-    return matchCategoria && matchBusca && p.estoque_atual > 0;
+    return matchCategoria && matchBusca && (p.estoque || 0) > 0;
   });
 
   return (
-    <div className="flex gap-6 h-full">
+    <div className="flex flex-col gap-4 h-full">
+      {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
+      
+      {/* Operador Atual */}
+      {caixaAberto && (
+        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+          <div className="text-2xl">👤</div>
+          <div>
+            <div className="text-sm opacity-90">Operador</div>
+            <div className="font-bold text-lg">{caixaAberto.usuario}</div>
+          </div>
+        </div>
+      )}
+      
+      {/* Alerta de Caixa Fechado */}
+      {!caixaAberto && (
+        <div className="bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3">
+          <div className="text-2xl">⚠️</div>
+          <div>
+            <div className="font-bold">Caixa Fechado</div>
+            <div className="text-sm opacity-90">Abra o caixa na Dashboard para realizar vendas</div>
+          </div>
+        </div>
+      )}
+      
+      {/* Área Principal */}
+      <div className="flex gap-6 flex-1">
       {/* Área de Produtos */}
       <div className="flex-1 flex flex-col">
         <div className="mb-4 flex gap-3">
@@ -192,7 +239,7 @@ const PDV = () => {
                   R$ {(parseFloat(produto.preco_venda) || 0).toFixed(2)}
                 </span>
                 <span className="text-xs bg-gray-200 px-2 py-1 rounded">
-                  Est: {produto.estoque_atual}
+                  Est: {produto.estoque || 0}
                 </span>
               </div>
             </button>
@@ -262,14 +309,36 @@ const PDV = () => {
           </select>
 
           {metodoPagamento === 'dinheiro' && (
-            <input
-              type="number"
-              placeholder="Valor recebido"
-              value={valorRecebido}
-              onChange={(e) => setValorRecebido(e.target.value)}
-              className="w-full"
-              step="0.01"
-            />
+            <div className="space-y-2">
+              <input
+                type="number"
+                placeholder="Valor recebido"
+                value={valorRecebido}
+                onChange={(e) => setValorRecebido(e.target.value)}
+                className="w-full"
+                step="0.01"
+              />
+              {valorRecebido && parseFloat(valorRecebido) >= calcularTotal() && (
+                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-green-700 font-semibold">💰 Troco:</span>
+                    <span className="text-2xl font-bold text-green-700">
+                      R$ {(parseFloat(valorRecebido) - calcularTotal()).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {valorRecebido && parseFloat(valorRecebido) < calcularTotal() && (
+                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-red-700 font-semibold">⚠️ Faltam:</span>
+                    <span className="text-xl font-bold text-red-700">
+                      R$ {(calcularTotal() - parseFloat(valorRecebido)).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           <button
@@ -280,6 +349,7 @@ const PDV = () => {
             💰 Finalizar Venda (F2)
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

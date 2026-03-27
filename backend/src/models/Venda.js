@@ -52,7 +52,15 @@ class Venda {
   static async findByPeriodo(dataInicio, dataFim) {
     const query = `
       SELECT v.*,
-        COUNT(vi.id) as total_itens
+        COUNT(vi.id) as total_itens,
+        json_agg(
+          json_build_object(
+            'produto_nome', vi.produto_nome,
+            'quantidade', vi.quantidade,
+            'preco_unitario', vi.preco_unitario,
+            'subtotal', vi.subtotal
+          )
+        ) as itens
       FROM vendas v
       LEFT JOIN venda_itens vi ON v.id = vi.venda_id
       WHERE DATE(v.data_venda) BETWEEN $1 AND $2
@@ -118,16 +126,16 @@ class Venda {
     try {
       await client.query('BEGIN');
 
-      const { itens, subtotal, desconto, total, lucro, metodo_pagamento, vendedor, observacoes } = vendaData;
+      const { itens, subtotal, desconto, total, lucro, metodo_pagamento, vendedor, observacoes, caixa_id } = vendaData;
 
       // Inserir venda
       const vendaQuery = `
-        INSERT INTO vendas (subtotal, desconto, total, lucro, metodo_pagamento, vendedor, observacoes)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO vendas (subtotal, desconto, total, lucro, metodo_pagamento, vendedor, observacoes, caixa_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `;
       const vendaResult = await client.query(vendaQuery, [
-        subtotal, desconto || 0, total, lucro, metodo_pagamento, vendedor, observacoes
+        subtotal, desconto || 0, total, lucro, metodo_pagamento, vendedor, observacoes, caixa_id
       ]);
       
       const venda = vendaResult.rows[0];

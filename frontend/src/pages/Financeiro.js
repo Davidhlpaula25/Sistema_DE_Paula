@@ -1,16 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { vendaService } from '../services';
+import Alert from '../components/Alert';
 
 const Financeiro = () => {
   const [vendas, setVendas] = useState([]);
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [vendaSelecionada, setVendaSelecionada] = useState(null);
+  const [alert, setAlert] = useState(null);
+  const [vendedorFiltro, setVendedorFiltro] = useState('');
+  const [vendedores, setVendedores] = useState([]);
   const [estatisticas, setEstatisticas] = useState({
     total_vendas: 0,
     valor_total: 0,
     lucro_total: 0
   });
+
+  const showAlert = (message, type = 'info') => {
+    setAlert({ message, type });
+    setTimeout(() => setAlert(null), 4000);
+  };
 
   useEffect(() => {
     const hoje = new Date();
@@ -32,10 +41,14 @@ const Financeiro = () => {
       const vendas = Array.isArray(vendasData) ? vendasData : [];
       setVendas(vendas);
       
+      // Extrair vendedores únicos
+      const vendedoresUnicos = [...new Set(vendas.map(v => v.vendedor).filter(Boolean))];
+      setVendedores(vendedoresUnicos);
+      
       const stats = vendas.reduce((acc, venda) => ({
         total_vendas: acc.total_vendas + 1,
-        valor_total: acc.valor_total + parseFloat(venda.valor_total || 0),
-        lucro_total: acc.lucro_total + parseFloat(venda.lucro_liquido || 0)
+        valor_total: acc.valor_total + parseFloat(venda.total || 0),
+        lucro_total: acc.lucro_total + parseFloat(venda.lucro || 0)
       }), { total_vendas: 0, valor_total: 0, lucro_total: 0 });
       
       setEstatisticas(stats);
@@ -51,7 +64,7 @@ const Financeiro = () => {
       const venda = await vendaService.getById(vendaId);
       setVendaSelecionada(venda);
     } catch (error) {
-      alert('Erro ao carregar detalhes da venda');
+      showAlert('Erro ao carregar detalhes da venda', 'error');
     }
   };
 
@@ -75,13 +88,117 @@ const Financeiro = () => {
     return badges[metodo] || 'badge-ok';
   };
 
+  const exportarExcel = () => {
+    const vendasFiltradas = vendasParaExibir();
+    
+    let csv = 'ID,Data/Hora,Vendedor,Método,Qtd Itens,Valor Total,Lucro\n';
+    vendasFiltradas.forEach(venda => {
+      const dataHora = new Date(venda.data_venda).toLocaleString('pt-BR');
+      const vendedor = venda.vendedor || 'Não informado';
+      const itens = venda.itens?.length || 0;
+      const total = parseFloat(venda.total || 0).toFixed(2);
+      const lucro = parseFloat(venda.lucro || 0).toFixed(2);
+      
+      csv += `${venda.id},${dataHora},${vendedor},${venda.metodo_pagamento},${itens},${total},${lucro}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `relatorio_vendas_${dataInicio}_${dataFim}.csv`;
+    link.click();
+    showAlert('Relatório exportado com sucesso!', 'success');
+  };
+
+  const exportarPDF = () => {
+    const vendasFiltradas = vendasParaExibir();
+    
+    let conteudo = `
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Relatório de Vendas</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #1e40af; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #1e40af; color: white; }
+            .totais { margin-top: 20px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h1>Relatório de Vendas</h1>
+          <p>Período: ${new Date(dataInicio).toLocaleDateString('pt-BR')} até ${new Date(dataFim).toLocaleDateString('pt-BR')}</p>
+          ${vendedorFiltro ? `<p>Vendedor: ${vendedorFiltro}</p>` : ''}
+          
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Data/Hora</th>
+                <th>Vendedor</th>
+                <th>Método</th>
+                <th>Itens</th>
+                <th>Valor Total</th>
+                <th>Lucro</th>
+              </tr>
+            </thead>
+            <tbody>
+    `;
+
+    vendasFiltradas.forEach(venda => {
+      conteudo += `
+        <tr>
+          <td>#${venda.id}</td>
+          <td>${new Date(venda.data_venda).toLocaleString('pt-BR')}</td>
+          <td>${venda.vendedor || 'Não informado'}</td>
+          <td>${venda.metodo_pagamento}</td>
+          <td>${venda.itens?.length || 0}</td>
+          <td>R$ ${parseFloat(venda.total || 0).toFixed(2)}</td>
+          <td>R$ ${parseFloat(venda.lucro || 0).toFixed(2)}</td>
+        </tr>
+      `;
+    });
+
+    const totalVendas = vendasFiltradas.length;
+    const totalReceita = vendasFiltradas.reduce((acc, v) => acc + parseFloat(v.total || 0), 0);
+    const totalLucro = vendasFiltradas.reduce((acc, v) => acc + parseFloat(v.lucro || 0), 0);
+
+    conteudo += `
+            </tbody>
+          </table>
+          
+          <div class="totais">
+            <p>Total de Vendas: ${totalVendas}</p>
+            <p>Receita Total: R$ ${totalReceita.toFixed(2)}</p>
+            <p>Lucro Total: R$ ${totalLucro.toFixed(2)}</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const janela = window.open('', '_blank');
+    janela.document.write(conteudo);
+    janela.document.close();
+    janela.print();
+    showAlert('Relatório aberto para impressão/PDF!', 'success');
+  };
+
+  const vendasParaExibir = () => {
+    if (!vendedorFiltro) return vendas;
+    return vendas.filter(v => v.vendedor === vendedorFiltro);
+  };
+
   return (
     <div>
+      {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
+      
       <h1 className="text-3xl font-bold mb-6">Relatório Financeiro</h1>
 
       {/* Filtros */}
-      <div className="card-premium mb-6">
-        <div className="flex gap-4 items-end">
+      <div className="card-premium mb-6 p-6">
+        <div className="flex gap-4 items-end mb-4">
           <div className="flex-1">
             <label className="block font-semibold mb-2">Data Início</label>
             <input
@@ -100,39 +217,61 @@ const Financeiro = () => {
               className="w-full"
             />
           </div>
+          <div className="flex-1">
+            <label className="block font-semibold mb-2">Vendedor</label>
+            <select
+              value={vendedorFiltro}
+              onChange={(e) => setVendedorFiltro(e.target.value)}
+              className="w-full"
+            >
+              <option value="">Todos os vendedores</option>
+              {vendedores.map(vendedor => (
+                <option key={vendedor} value={vendedor}>{vendedor}</option>
+              ))}
+            </select>
+          </div>
           <button onClick={carregarVendas} className="btn-primary">
             🔍 Buscar
+          </button>
+        </div>
+        
+        <div className="flex gap-3 pt-4 border-t">
+          <button onClick={exportarExcel} className="btn-success">
+            📊 Exportar Excel
+          </button>
+          <button onClick={exportarPDF} className="btn-primary">
+            📄 Exportar PDF
           </button>
         </div>
       </div>
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-3 gap-6 mb-6">
-        <div className="card-premium bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+        <div className="card-premium p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
           <div className="text-sm opacity-90 mb-2">Total de Vendas</div>
-          <div className="text-4xl font-bold">{estatisticas.total_vendas}</div>
+          <div className="text-4xl font-bold">{vendasParaExibir().length}</div>
         </div>
 
-        <div className="card-premium bg-gradient-to-br from-green-500 to-green-600 text-white">
+        <div className="card-premium p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
           <div className="text-sm opacity-90 mb-2">Receita Total</div>
           <div className="text-4xl font-bold">
-            R$ {(estatisticas.valor_total || 0).toFixed(2)}
+            R$ {vendasParaExibir().reduce((acc, v) => acc + parseFloat(v.total || 0), 0).toFixed(2)}
           </div>
         </div>
 
-        <div className="card-premium bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+        <div className="card-premium p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white">
           <div className="text-sm opacity-90 mb-2">Lucro Líquido</div>
           <div className="text-4xl font-bold">
-            R$ {(estatisticas.lucro_total || 0).toFixed(2)}
+            R$ {vendasParaExibir().reduce((acc, v) => acc + parseFloat(v.lucro || 0), 0).toFixed(2)}
           </div>
         </div>
       </div>
 
       {/* Tabela de Vendas */}
-      <div className="card-premium">
+      <div className="card-premium p-6">
         <h2 className="text-xl font-bold mb-4">Histórico de Vendas</h2>
         
-        {vendas.length === 0 ? (
+        {vendasParaExibir().length === 0 ? (
           <p className="text-center text-gray-400 py-8">Nenhuma venda encontrada no período</p>
         ) : (
           <div className="overflow-x-auto">
@@ -141,6 +280,7 @@ const Financeiro = () => {
                 <tr>
                   <th>ID</th>
                   <th>Data/Hora</th>
+                  <th>Vendedor</th>
                   <th>Método</th>
                   <th>Qtd. Itens</th>
                   <th>Valor Total</th>
@@ -149,7 +289,7 @@ const Financeiro = () => {
                 </tr>
               </thead>
               <tbody>
-                {vendas.map(venda => (
+                {vendasParaExibir().map(venda => (
                   <tr key={venda.id}>
                     <td className="font-mono">#{venda.id}</td>
                     <td>
@@ -160,6 +300,7 @@ const Financeiro = () => {
                         minute: '2-digit' 
                       })}
                     </td>
+                    <td>{venda.vendedor || 'Não informado'}</td>
                     <td>
                       <span className={getMetodoPagamentoBadge(venda.metodo_pagamento)}>
                         {getMetodoPagamentoIcon(venda.metodo_pagamento)} {venda.metodo_pagamento}
@@ -167,10 +308,10 @@ const Financeiro = () => {
                     </td>
                     <td className="text-center">{venda.itens?.length || '-'}</td>
                     <td className="font-bold text-green-600">
-                      R$ {parseFloat(venda.valor_total).toFixed(2)}
+                      R$ {parseFloat(venda.total || 0).toFixed(2)}
                     </td>
                     <td className="font-bold text-purple-600">
-                      R$ {parseFloat(venda.lucro_liquido).toFixed(2)}
+                      R$ {parseFloat(venda.lucro || 0).toFixed(2)}
                     </td>
                     <td>
                       <button

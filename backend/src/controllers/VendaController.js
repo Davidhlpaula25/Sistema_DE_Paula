@@ -1,4 +1,5 @@
 const Venda = require('../models/Venda');
+const Caixa = require('../models/Caixa');
 
 class VendaController {
   // GET /api/vendas
@@ -80,6 +81,16 @@ class VendaController {
   static async create(req, res) {
     try {
       const vendaData = req.body;
+      
+      // Verificar se tem caixa aberto
+      const caixaAberto = await Caixa.findCaixaAberto();
+      if (!caixaAberto) {
+        return res.status(400).json({ error: 'Nenhum caixa aberto. Abra o caixa antes de realizar vendas.' });
+      }
+
+      // Adicionar caixa_id e vendedor à venda automaticamente
+      vendaData.caixa_id = caixaAberto.id;
+      vendaData.vendedor = caixaAberto.usuario; // Pega o nome do operador que abriu o caixa
       
       // Validações básicas
       if (!vendaData.itens || vendaData.itens.length === 0) {
